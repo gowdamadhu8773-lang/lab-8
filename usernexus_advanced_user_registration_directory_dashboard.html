@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UserNexus — Enterprise Identity & Directory Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300 selection:bg-brand-500 selection:text-white">
+
+    <!-- Decorative Ambient Background Blobs -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-brand-500/10 dark:bg-brand-500/15 blur-3xl"></div>
+        <div class="absolute top-1/2 -left-40 w-96 h-96 rounded-full bg-violet-500/10 dark:bg-violet-500/15 blur-3xl"></div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Custom Confirmation Modal (Replaces native confirm()) -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all">
+            <div class="flex items-center gap-3 text-rose-600 dark:text-rose-400 mb-3">
+                <div class="p-2.5 bg-rose-100 dark:bg-rose-950/60 rounded-xl">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 id="confirm-title" class="text-lg font-bold text-slate-900 dark:text-white">Confirm Action</h3>
+            </div>
+            <p id="confirm-message" class="text-sm text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                Are you sure you want to proceed with this action? This cannot be undone.
+            </p>
+            <div class="flex justify-end gap-3">
+                <button id="confirm-cancel-btn" class="px-4 py-2.5 text-sm font-medium rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    Cancel
+                </button>
+                <button id="confirm-proceed-btn" class="px-4 py-2.5 text-sm font-medium rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 transition">
+                    Delete Record
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between h-auto py-3 md:h-16 md:py-0 gap-3">
+                
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/25">
+                        <i data-lucide="layers" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300">UserNexus</span>
+                            <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300 border border-brand-200 dark:border-brand-800">v2.4 Pro</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Client-Side Storage & Identity Engine</p>
+                    </div>
+                </div>
+
+                <!-- Multi-Page Simulated Navigation Tabs -->
+                <nav class="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60 order-3 md:order-2 w-full md:w-auto justify-center">
+                    <button onclick="switchPage('register')" id="nav-register" class="nav-tab flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        <span>Registration Page</span>
+                    </button>
+                    <button onclick="switchPage('directory')" id="nav-directory" class="nav-tab flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Directory Page</span>
+                        <span id="nav-badge-count" class="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300">0</span>
+                    </button>
+                    <button onclick="switchPage('source')" id="nav-source" class="nav-tab flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                        <i data-lucide="code-2" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Multi-File Source</span>
+                        <span class="sm:hidden">Code</span>
+                    </button>
+                </nav>
+
+                <!-- Right Controls: Theme Toggle & Quick Demo Seed -->
+                <div class="flex items-center gap-2 order-2 md:order-3">
+                    <button onclick="seedSampleData()" title="Populate Sample Users" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span class="hidden lg:inline">Seed Demo Data</span>
+                    </button>
+                    <button onclick="toggleTheme()" id="theme-toggle" aria-label="Toggle Dark Mode" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition">
+                        <i data-lucide="moon" id="theme-icon-dark" class="w-4 h-4 block dark:hidden"></i>
+                        <i data-lucide="sun" id="theme-icon-light" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ===================================================================== -->
+        <!-- PAGE 1: REGISTRATION FORM VIEW (index.html simulation)                -->
+        <!-- ===================================================================== -->
+        <section id="page-register" class="page-view block animate-fadeIn">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Left Column: Form Card (8 cols) -->
+                <div class="lg:col-span-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-xl shadow-slate-200/40 dark:shadow-none p-6 sm:p-8">
+                    
+                    <!-- Form Header & Edit Banner -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-200 dark:border-slate-800">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 mb-2">
+                                <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+                                <span id="form-mode-badge">Page 1: Data Capture Form</span>
+                            </div>
+                            <h1 id="form-heading" class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Create User Profile</h1>
+                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Complete the verified fields below. Data is serialized to <code class="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">localStorage</code> and routed to the Directory Page.</p>
+                        </div>
+                        <button type="button" id="cancel-edit-btn" onclick="resetFormState()" class="hidden self-start sm:self-center items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 hover:bg-amber-200 transition">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            Cancel Edit
+                        </button>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <form id="registration-form" novalidate class="space-y-6">
+                        <input type="hidden" id="edit-record-id" value="">
+
+                        <!-- Section 1: Personal Identity -->
+                        <div>
+                            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4 flex items-center gap-2">
+                                <i data-lucide="user-check" class="w-4 h-4 text-brand-500"></i>
+                                Personal & Contact Credentials
+                            </h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <!-- Full Name -->
+                                <div class="md:col-span-2">
+                                    <label for="fullName" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Full Name <span class="text-rose-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <i data-lucide="user" class="w-4 h-4"></i>
+                                        </div>
+                                        <input type="text" id="fullName" name="fullName" value="Madhu Gowda" placeholder="e.g., Madhu Gowda" autocomplete="name"
+                                            class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm">
+                                        <div id="icon-fullName" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none"></div>
+                                    </div>
+                                    <p id="error-fullName" class="mt-1.5 text-xs text-rose-500 hidden flex items-center gap-1"></p>
+                                </div>
+
+                                <!-- Gender Selector (Modern Interactive Radio Cards) -->
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Gender <span class="text-rose-500">*</span>
+                                    </label>
+                                    <div class="grid grid-cols-3 gap-3" id="gender-group">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="gender" value="Male" class="peer sr-only">
+                                            <div class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-slate-700 dark:text-slate-300 peer-checked:border-brand-500 peer-checked:bg-brand-50/70 dark:peer-checked:bg-brand-950/50 peer-checked:text-brand-700 dark:peer-checked:text-brand-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition">
+                                                <span>Male</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="gender" value="Female" class="peer sr-only">
+                                            <div class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-slate-700 dark:text-slate-300 peer-checked:border-brand-500 peer-checked:bg-brand-50/70 dark:peer-checked:bg-brand-950/50 peer-checked:text-brand-700 dark:peer-checked:text-brand-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition">
+                                                <span>Female</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="gender" value="Non-Binary / Other" class="peer sr-only">
+                                            <div class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-slate-700 dark:text-slate-300 peer-checked:border-brand-500 peer-checked:bg-brand-50/70 dark:peer-checked:bg-brand-950/50 peer-checked:text-brand-700 dark:peer-checked:text-brand-300 hover:bg-slate-50 dark:hover:bg-slate-900 transition">
+                                                <span>Other</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <p id="error-gender" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+
+                                <!-- Mobile Number with Country Code -->
+                                <div>
+                                    <label for="mobile" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Mobile Number <span class="text-rose-500">*</span>
+                                    </label>
+                                    <div class="flex rounded-xl shadow-sm">
+                                        <select id="dialCode" aria-label="Country Dial Code"
+                                            class="rounded-l-xl border border-r-0 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                                            <option value="+91">🇮🇳 +91</option>
+                                            <option value="+1">🇺🇸 +1</option>
+                                            <option value="+44">🇬🇧 +44</option>
+                                            <option value="+1-CA">🇨🇦 +1</option>
+                                            <option value="+61">🇦🇺 +61</option>
+                                            <option value="+49">🇩🇪 +49</option>
+                                            <option value="+81">🇯🇵 +81</option>
+                                        </select>
+                                        <div class="relative flex-1">
+                                            <input type="tel" id="mobile" name="mobile" placeholder="98765 43210" maxlength="14"
+                                                class="w-full pl-3.5 pr-9 py-2.5 rounded-r-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm font-mono">
+                                            <div id="icon-mobile" class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"></div>
+                                        </div>
+                                    </div>
+                                    <p id="error-mobile" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+
+                                <!-- Email ID -->
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Email ID <span class="text-rose-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                            <i data-lucide="mail" class="w-4 h-4"></i>
+                                        </div>
+                                        <input type="email" id="email" name="email" value="madhugowda@gmail.com" placeholder="madhugowda@gmail.com" autocomplete="email"
+                                            class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm">
+                                        <div id="icon-email" class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none"></div>
+                                    </div>
+                                    <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Default profile handle: <span class="font-medium text-slate-600 dark:text-slate-300">madhu gowda</span></p>
+                                    <p id="error-email" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Cascading Regional Location -->
+                        <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800/80">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-brand-500"></i>
+                                    Cascading Location Hierarchy
+                                </h2>
+                                <span class="text-[11px] text-slate-400 dark:text-slate-500">Country → State → City</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Country -->
+                                <div>
+                                    <label for="country" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        Country <span class="text-rose-500">*</span>
+                                    </label>
+                                    <select id="country" name="country"
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm">
+                                        <option value="">Select Country</option>
+                                    </select>
+                                    <input type="text" id="customCountry" placeholder="Enter custom country" class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm">
+                                    <p id="error-country" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+
+                                <!-- State -->
+                                <div>
+                                    <label for="state" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        State / Province <span class="text-rose-500">*</span>
+                                    </label>
+                                    <select id="state" name="state" disabled
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm">
+                                        <option value="">Select Country First</option>
+                                    </select>
+                                    <input type="text" id="customState" placeholder="Enter custom state" class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm">
+                                    <p id="error-state" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+
+                                <!-- City -->
+                                <div>
+                                    <label for="city" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                                        City <span class="text-rose-500">*</span>
+                                    </label>
+                                    <select id="city" name="city" disabled
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 transition text-sm">
+                                        <option value="">Select State First</option>
+                                    </select>
+                                    <input type="text" id="customCity" placeholder="Enter custom city" class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm">
+                                    <p id="error-city" class="mt-1.5 text-xs text-rose-500 hidden"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <button type="button" onclick="resetFormState()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                Clear Form
+                            </button>
+                            <button type="submit" id="submit-btn" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-brand-600 to-violet-600 hover:from-brand-700 hover:to-violet-700 text-white font-semibold text-sm shadow-lg shadow-brand-500/30 hover:shadow-brand-500/40 transition-all flex items-center justify-center gap-2">
+                                <span id="submit-btn-text">Save & Open Directory Page</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Right Column: Live Identity Card Preview & Storage Inspector (4 cols) -->
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <!-- Live Identity Badge Preview -->
+                    <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-brand-950 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden border border-slate-700/60">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-500/20 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-xs font-mono uppercase tracking-widest text-brand-300">Live Card Preview</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">REAL-TIME SYNC</span>
+                        </div>
+
+                        <div class="flex items-center gap-4 mb-6">
+                            <div id="preview-avatar" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-500 to-violet-500 flex items-center justify-center text-xl font-bold shadow-inner">
+                                MG
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h3 id="preview-name" class="font-bold text-lg truncate text-white">Madhu Gowda</h3>
+                                <p id="preview-gender" class="text-xs text-slate-400">Gender not selected</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-xs border-t border-white/10 pt-4">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5 text-brand-400"></i> Mobile</span>
+                                <span id="preview-mobile" class="font-mono text-slate-200 truncate">+91 ••••• •••••</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="mail" class="w-3.5 h-3.5 text-brand-400"></i> Email</span>
+                                <span id="preview-email" class="text-slate-200 truncate max-w-[180px]">madhugowda@gmail.com</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-400 flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5 text-brand-400"></i> Location</span>
+                                <span id="preview-location" class="text-slate-200 truncate max-w-[180px]">Bangalore, Karnataka, India</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Architecture Info Card -->
+                    <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
+                            <i data-lucide="database" class="w-4 h-4 text-brand-500"></i>
+                            How Cross-Page State Works
+                        </h3>
+                        <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                                <span><strong>Validation Engine:</strong> Validates international phone lengths, RFC-5322 email patterns, and mandatory location trees before submission.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                                <span><strong>Persistence:</strong> Serializes records into <code class="font-mono text-[11px] text-brand-600 dark:text-brand-400">localStorage['usernexus_records']</code> so data survives page reloads and tab switches.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+                                <span><strong>Multi-File Ready:</strong> Check the <em>Multi-File Source</em> tab to copy or download standalone <code class="font-mono text-[11px]">index.html</code> and <code class="font-mono text-[11px]">display.html</code> files.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- PAGE 2: DISPLAY / DIRECTORY DASHBOARD VIEW (display.html simulation)  -->
+        <!-- ===================================================================== -->
+        <section id="page-directory" class="page-view hidden space-y-8">
+            
+            <!-- Top KPI & Action Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 mb-2">
+                        <i data-lucide="hard-drive" class="w-3.5 h-3.5"></i>
+                        <span>Page 2: Captured Records Dashboard</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">User Directory & Profiles</h1>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Displaying records retrieved dynamically from <code class="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">localStorage</code>.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button onclick="exportData('csv')" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 transition">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+                        Export CSV
+                    </button>
+                    <button onclick="exportData('json')" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 transition">
+                        <i data-lucide="file-json" class="w-4 h-4 text-amber-500"></i>
+                        Export JSON
+                    </button>
+                    <button onclick="switchPage('register')" class="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-lg shadow-brand-500/25 flex items-center gap-2 transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Add New User
+                    </button>
+                </div>
+            </div>
+
+            <!-- Spotlight Card: Latest Captured Profile -->
+            <div id="latest-profile-container" class="hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-brand-500"></i>
+                        Latest Captured Submission
+                    </h2>
+                    <span id="latest-timestamp" class="text-xs text-slate-400 font-mono"></span>
+                </div>
+                
+                <div id="latest-profile-card" class="bg-gradient-to-r from-brand-600 via-indigo-600 to-violet-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-brand-500/20 relative overflow-hidden">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Search, Filter & Directory Table Card -->
+            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl shadow-xl shadow-slate-200/30 dark:shadow-none overflow-hidden">
+                
+                <!-- Table Controls Bar -->
+                <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+                        <!-- Search Input -->
+                        <div class="relative flex-1 max-w-md">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i data-lucide="search" class="w-4 h-4"></i>
+                            </div>
+                            <input type="text" id="search-input" placeholder="Search by name, email, phone, or city..."
+                                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                        </div>
+
+                        <!-- Filter by Country -->
+                        <select id="filter-country" class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                            <option value="ALL">All Countries</option>
+                        </select>
+
+                        <!-- Filter by Gender -->
+                        <select id="filter-gender" class="px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                            <option value="ALL">All Genders</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Non-Binary / Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3">
+                        <span id="records-showing-label" class="text-xs font-medium text-slate-500 dark:text-slate-400">Showing 0 records</span>
+                        <button id="clear-all-btn" onclick="confirmClearAll()" class="hidden px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition flex items-center gap-1.5">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            Purge All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Responsive Data Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                <th class="py-3.5 px-6">User Identity</th>
+                                <th class="py-3.5 px-4">Gender</th>
+                                <th class="py-3.5 px-4">Mobile Number</th>
+                                <th class="py-3.5 px-4">Email Address</th>
+                                <th class="py-3.5 px-4">Location (City, State, Country)</th>
+                                <th class="py-3.5 px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="directory-table-body" class="divide-y divide-slate-200/70 dark:divide-slate-800/70 text-sm">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-directory-state" class="hidden py-16 px-6 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center mb-4">
+                        <i data-lucide="inbox" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">No User Records Found</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 mb-6">
+                        Your local directory is currently empty or no entries match your active filters. Capture a user on the Registration Page or load demo profiles.
+                    </p>
+                    <div class="flex flex-wrap items-center justify-center gap-3">
+                        <button onclick="switchPage('register')" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold transition">
+                            Go to Registration Form
+                        </button>
+                        <button onclick="seedSampleData()" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm font-semibold transition">
+                            Load Sample Profiles
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- PAGE 3: STANDALONE MULTI-FILE SOURCE INSPECTOR & DOWNLOADER           -->
+        <!-- ===================================================================== -->
+        <section id="page-source" class="page-view hidden space-y-6">
+            <div class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-slate-800">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 mb-2">
+                            <i data-lucide="folder-code" class="w-3.5 h-3.5"></i>
+                            Separate Physical Files Architecture
+                        </span>
+                        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Standalone Multi-Page Source Code</h1>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                            Need separate physical files (<code class="font-mono text-xs">index.html</code>, <code class="font-mono text-xs">display.html</code>, <code class="font-mono text-xs">styles.css</code>, <code class="font-mono text-xs">app.js</code>) to deploy on your own server? Inspect, copy, or download each file below.
+                        </p>
+                    </div>
+                    <button onclick="downloadAllStandaloneFiles()" class="self-start md:self-center px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-lg shadow-brand-500/25 flex items-center gap-2 transition">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download All 4 Files
+                    </button>
+                </div>
+
+                <!-- File Selector Tabs -->
+                <div class="flex flex-wrap items-center justify-between gap-3 my-5">
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="selectSourceTab('index.html')" id="src-tab-index.html" class="src-tab px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-slate-900 text-white dark:bg-brand-600 transition">index.html</button>
+                        <button onclick="selectSourceTab('display.html')" id="src-tab-display.html" class="src-tab px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">display.html</button>
+                        <button onclick="selectSourceTab('styles.css')" id="src-tab-styles.css" class="src-tab px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">styles.css</button>
+                        <button onclick="selectSourceTab('app.js')" id="src-tab-app.js" class="src-tab px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">app.js</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="copyActiveSourceCode()" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            Copy Code
+                        </button>
+                        <button onclick="downloadSingleSourceFile()" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5 transition">
+                            <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                            Download File
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Code Viewer -->
+                <div class="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800 text-xs font-mono text-slate-400">
+                        <span id="active-filename-label">index.html</span>
+                        <span>UTF-8 • Production Ready</span>
+                    </div>
+                    <pre class="p-4 sm:p-6 text-xs font-mono text-slate-200 overflow-x-auto max-h-[520px] leading-relaxed"><code id="source-code-display"></code></pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200/80 dark:border-slate-800/80 py-6 mt-12 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+            <p>© 2026 UserNexus Identity Systems. Built with HTML5, Tailwind CSS & Vanilla ES6+ JavaScript.</p>
+            <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> LocalStorage Engine Active</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        /**
+         * ============================================================================
+         * 1. HIERARCHICAL GEOGRAPHIC DATASET (Country -> State -> City)
+         * ============================================================================
+         */
+        const LOCATION_DATA = {
+            "India": {
+                dialCode: "+91",
+                states: {
+                    "Karnataka": ["Bangalore", "Bengaluru", "Mysuru", "Mangaluru", "Hubballi", "Belagavi"],
+                    "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad"],
+                    "Delhi": ["New Delhi", "North Delhi", "South Delhi", "Dwarka"],
+                    "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem"],
+                    "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar"],
+                    "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot"]
+                }
+            },
+            "United States": {
+                dialCode: "+1",
+                states: {
+                    "California": ["San Francisco", "Los Angeles", "San Diego", "San Jose", "Sacramento"],
+                    "New York": ["New York City", "Buffalo", "Rochester", "Albany"],
+                    "Texas": ["Austin", "Houston", "Dallas", "San Antonio"],
+                    "Washington": ["Seattle", "Bellevue", "Spokane", "Tacoma"],
+                    "Massachusetts": ["Boston", "Cambridge", "Worcester"]
+                }
+            },
+            "United Kingdom": {
+                dialCode: "+44",
+                states: {
+                    "England": ["London", "Manchester", "Birmingham", "Leeds", "Bristol"],
+                    "Scotland": ["Edinburgh", "Glasgow", "Aberdeen", "Dundee"],
+                    "Wales": ["Cardiff", "Swansea", "Newport"],
+                    "Northern Ireland": ["Belfast", "Derry", "Lisburn"]
+                }
+            },
+            "Canada": {
+                dialCode: "+1-CA",
+                states: {
+                    "Ontario": ["Toronto", "Ottawa", "Mississauga", "Waterloo"],
+                    "British Columbia": ["Vancouver", "Victoria", "Surrey", "Burnaby"],
+                    "Quebec": ["Montreal", "Quebec City", "Laval"],
+                    "Alberta": ["Calgary", "Edmonton", "Banff"]
+                }
+            },
+            "Australia": {
+                dialCode: "+61",
+                states: {
+                    "New South Wales": ["Sydney", "Newcastle", "Wollongong"],
+                    "Victoria": ["Melbourne", "Geelong", "Ballarat"],
+                    "Queensland": ["Brisbane", "Gold Coast", "Cairns"],
+                    "Western Australia": ["Perth", "Fremantle"]
+                }
+            }
+        };
+
+        const STORAGE_KEY = 'usernexus_records_v1';
+        let activeSourceFile = 'index.html';
+        let confirmCallback = null;
+
+        /**
+         * ============================================================================
+         * 2. INITIALIZATION & THEME MANAGEMENT
+         * ============================================================================
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            populateCountryDropdown();
+            applyDefaultPrefill();
+            bindFormListeners();
+            bindDirectoryFilters();
+            renderDirectory();
+            selectSourceTab('index.html');
+            lucide.createIcons();
+        });
+
+        function applyDefaultPrefill() {
+            document.getElementById('fullName').value = 'Madhu Gowda';
+            document.getElementById('email').value = 'madhugowda@gmail.com';
+            const countryEl = document.getElementById('country');
+            countryEl.value = 'India';
+            handleCountryChange();
+
+            const stateEl = document.getElementById('state');
+            stateEl.value = 'Karnataka';
+            handleStateChange();
+
+            const cityEl = document.getElementById('city');
+            cityEl.value = 'Bangalore';
+
+            ['fullName', 'email', 'country', 'state', 'city'].forEach(validateField);
+            updateLivePreview();
+        }
+
+        function handleStateChange() {
+            const countryVal = document.getElementById('country').value;
+            const stateVal = document.getElementById('state').value;
+            const customStateInput = document.getElementById('customState');
+            const citySelect = document.getElementById('city');
+            const customCityInput = document.getElementById('customCity');
+
+            customCityInput.classList.add('hidden');
+            customCityInput.value = '';
+
+            if (!stateVal) {
+                customStateInput.classList.add('hidden');
+                citySelect.innerHTML = '<option value="">Select State First</option>';
+                citySelect.disabled = true;
+            } else if (stateVal === '__CUSTOM__') {
+                customStateInput.classList.remove('hidden');
+                customStateInput.focus();
+                citySelect.innerHTML = '<option value="__CUSTOM__">+ Custom City</option>';
+                citySelect.value = '__CUSTOM__';
+                citySelect.disabled = false;
+                customCityInput.classList.remove('hidden');
+            } else {
+                customStateInput.classList.add('hidden');
+                customStateInput.value = '';
+
+                citySelect.disabled = false;
+                citySelect.innerHTML = '<option value="">Select City</option>';
+                const cities = LOCATION_DATA[countryVal]?.states[stateVal] || [];
+                cities.forEach(ct => {
+                    const opt = document.createElement('option');
+                    opt.value = ct;
+                    opt.textContent = ct;
+            document.getElementById('preview-name').textContent = name || 'Madhu Gowda';
+            document.getElementById('preview-gender').textContent = genderEl ? genderEl.value : 'Gender not selected';
+            document.getElementById('preview-mobile').textContent = mobile ? `${dialCode} ${mobile}` : `${dialCode} ••••• •••••`;
+            document.getElementById('preview-email').textContent = email || 'madhugowda@gmail.com';
+
+            const locParts = [city, state, country].filter(Boolean);
+            document.getElementById('preview-location').textContent = locParts.length ? locParts.join(', ') : 'Bangalore, Karnataka, India';
+        }
+
+            validateField('state');
+            updateLivePreview();
+        }
+
+        function handleCityChange() {
+            const cityVal = document.getElementById('city').value;
+            const customCityInput = document.getElementById('customCity');
+
+            if (cityVal === '__CUSTOM__') {
+                customCityInput.classList.remove('hidden');
+                customCityInput.focus();
+            } else {
+                customCityInput.classList.add('hidden');
+                customCityInput.value = '';
+            }
+            validateField('city');
+            updateLivePreview();
+        }
+
+        /**
+         * ============================================================================
+         * 5. REAL-TIME VALIDATION, FORMATTING & LIVE PREVIEW
+         * ============================================================================
+         */
+        function bindFormListeners() {
+            const form = document.getElementById('registration-form');
+
+            // Name live validation & preview
+            document.getElementById('fullName').addEventListener('input', () => {
+                validateField('fullName');
+                updateLivePreview();
+            });
+
+            // Gender radio change
+            document.querySelectorAll('input[name="gender"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    validateField('gender');
+                    updateLivePreview();
+                });
+            });
+
+            // Mobile auto-formatting & validation
+            document.getElementById('mobile').addEventListener('input', (e) => {
+                let digits = e.target.value.replace(/\D/g, '').slice(0, 12);
+                // Format as 5-5 for 10 digits or 3-3-4
+                if (digits.length > 5 && digits.length <= 10) {
+                    e.target.value = `${digits.slice(0, 5)} ${digits.slice(5)}`;
+                } else {
+                    e.target.value = digits;
+                }
+                validateField('mobile');
+                updateLivePreview();
+            });
+
+            document.getElementById('dialCode').addEventListener('change', updateLivePreview);
+
+            // Email validation
+            document.getElementById('email').addEventListener('input', () => {
+                validateField('email');
+                updateLivePreview();
+            });
+
+            // Location cascades & custom inputs
+            document.getElementById('country').addEventListener('change', handleCountryChange);
+            document.getElementById('state').addEventListener('change', handleStateChange);
+            document.getElementById('city').addEventListener('change', handleCityChange);
+
+            ['customCountry', 'customState', 'customCity'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    validateField(id.replace('custom', '').toLowerCase());
+                    updateLivePreview();
+                });
+            });
+
+            // Form submission
+            form.addEventListener('submit', handleFormSubmit);
+        }
+
+        function getResolvedLocation() {
+            const countrySel = document.getElementById('country').value;
+            const stateSel = document.getElementById('state').value;
+            const citySel = document.getElementById('city').value;
+
+            const country = countrySel === '__CUSTOM__' ? document.getElementById('customCountry').value.trim() : countrySel;
+            const state = stateSel === '__CUSTOM__' ? document.getElementById('customState').value.trim() : stateSel;
+            const city = citySel === '__CUSTOM__' ? document.getElementById('customCity').value.trim() : citySel;
+
+            return { country, state, city };
+        }
+
+        function validateField(fieldName) {
+            let isValid = true;
+            let message = '';
+
+            if (fieldName === 'fullName') {
+                const val = document.getElementById('fullName').value.trim();
+                if (!val) {
+                    isValid = false;
+                    message = 'Full name is required.';
+                } else if (val.length < 3) {
+                    isValid = false;
+                    message = 'Name must be at least 3 characters.';
+                } else if (!/^[a-zA-Z\s.'-]+$/.test(val)) {
+                    isValid = false;
+                    message = 'Name can only contain letters, spaces, dots, or hyphens.';
+                }
+                setFieldFeedback('fullName', isValid, message);
+            }
+
+            if (fieldName === 'gender') {
+                const checked = document.querySelector('input[name="gender"]:checked');
+                const errEl = document.getElementById('error-gender');
+                if (!checked) {
+                    isValid = false;
+                    errEl.textContent = 'Please select a gender option.';
+                    errEl.classList.remove('hidden');
+                } else {
+                    errEl.classList.add('hidden');
+                }
+            }
+
+            if (fieldName === 'mobile') {
+                const rawDigits = document.getElementById('mobile').value.replace(/\D/g, '');
+                if (!rawDigits) {
+                    isValid = false;
+                    message = 'Mobile number is required.';
+                } else if (rawDigits.length < 7 || rawDigits.length > 12) {
+                    isValid = false;
+                    message = 'Enter a valid 7 to 12 digit phone number.';
+                }
+                setFieldFeedback('mobile', isValid, message);
+            }
+
+            if (fieldName === 'email') {
+                const val = document.getElementById('email').value.trim();
+                const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                if (!val) {
+                    isValid = false;
+                    message = 'Email address is required.';
+                } else if (!emailRegex.test(val)) {
+                    isValid = false;
+                    message = 'Please enter a valid email address (e.g., user@domain.com).';
+                }
+                setFieldFeedback('email', isValid, message);
+            }
+
+            if (fieldName === 'country' || fieldName === 'state' || fieldName === 'city') {
+                const loc = getResolvedLocation();
+                const val = loc[fieldName];
+                const errEl = document.getElementById(`error-${fieldName}`);
+                if (!val) {
+                    isValid = false;
+                    errEl.textContent = `Please select or enter a ${fieldName}.`;
+                    errEl.classList.remove('hidden');
+                } else {
+                    errEl.classList.add('hidden');
+                }
+            }
+
+            return isValid;
+        }
+
+        function setFieldFeedback(id, isValid, message) {
+            const inputEl = document.getElementById(id);
+            const errorEl = document.getElementById(`error-${id}`);
+            const iconEl = document.getElementById(`icon-${id}`);
+
+            if (!isValid) {
+                inputEl.classList.remove('border-slate-300', 'dark:border-slate-700', 'border-emerald-500');
+                inputEl.classList.add('border-rose-500');
+                errorEl.textContent = message;
+                errorEl.classList.remove('hidden');
+                if (iconEl) {
+                    iconEl.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>`;
+                }
+            } else {
+                inputEl.classList.remove('border-slate-300', 'dark:border-slate-700', 'border-rose-500');
+                inputEl.classList.add('border-emerald-500');
+                errorEl.classList.add('hidden');
+                if (iconEl) {
+                    iconEl.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>`;
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function updateLivePreview() {
+            const name = document.getElementById('fullName').value.trim();
+            const genderEl = document.querySelector('input[name="gender"]:checked');
+            const dialCode = document.getElementById('dialCode').value.replace('-CA', '');
+            const mobile = document.getElementById('mobile').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const { city, state, country } = getResolvedLocation();
+
+            // Avatar Initials
+            const avatarEl = document.getElementById('preview-avatar');
+            if (name) {
+                const parts = name.split(' ').filter(Boolean);
+                const initials = parts.length > 1 
+                    ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase() 
+                    : name.slice(0, 2).toUpperCase();
+                avatarEl.textContent = initials;
+            } else {
+                avatarEl.textContent = '?';
+            }
+
+            document.getElementById('preview-name').textContent = name || 'Your Full Name';
+            document.getElementById('preview-gender').textContent = genderEl ? genderEl.value : 'Gender not selected';
+            document.getElementById('preview-mobile').textContent = mobile ? `${dialCode} ${mobile}` : `${dialCode} ••••• •••••`;
+            document.getElementById('preview-email').textContent = email || 'pending@domain.com';
+
+            const locParts = [city, state, country].filter(Boolean);
+            document.getElementById('preview-location').textContent = locParts.length ? locParts.join(', ') : 'City, State, Country';
+        }
+
+        /**
+         * ============================================================================
+         * 6. STORAGE CRUD OPERATIONS (Save, Update, Delete, Export)
+         * ============================================================================
+         */
+        function getRecords() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (err) {
+                console.error('Failed to parse localStorage records:', err);
+                return [];
+            }
+        }
+
+        function saveRecords(records) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            updateNavBadge(records.length);
+        }
+
+        function updateNavBadge(count) {
+            document.getElementById('nav-badge-count').textContent = count;
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const fieldsToValidate = ['fullName', 'gender', 'mobile', 'email', 'country', 'state', 'city'];
+            const results = fieldsToValidate.map(f => validateField(f));
+            if (results.includes(false)) {
+                showToast('Please fix the highlighted validation errors before submitting.', 'error');
+                return;
+            }
+
+            const editId = document.getElementById('edit-record-id').value;
+            const dialCode = document.getElementById('dialCode').value.replace('-CA', '');
+            const { country, state, city } = getResolvedLocation();
+
+            const recordPayload = {
+                id: editId || `USR-${Date.now().toString(36).toUpperCase()}`,
+                fullName: document.getElementById('fullName').value.trim(),
+                gender: document.querySelector('input[name="gender"]:checked').value,
+                dialCode: dialCode,
+                rawDialCode: document.getElementById('dialCode').value,
+                mobile: document.getElementById('mobile').value.trim(),
+                email: document.getElementById('email').value.trim().toLowerCase(),
+                city,
+                state,
+                country,
+                updatedAt: new Date().toISOString()
+            };
+
+            const records = getRecords();
+
+            if (editId) {
+                const idx = records.findIndex(r => r.id === editId);
+                if (idx !== -1) {
+                    records[idx] = recordPayload;
+                    showToast(`Updated profile for ${recordPayload.fullName}`, 'success');
+                }
+            } else {
+                records.unshift(recordPayload); // Add newest at top
+                showToast(`Saved ${recordPayload.fullName} to localStorage!`, 'success');
+            }
+
+            saveRecords(records);
+            resetFormState();
+            switchPage('directory');
+        }
+
+        function resetFormState() {
+            const form = document.getElementById('registration-form');
+            form.reset();
+            document.getElementById('edit-record-id').value = '';
+            document.getElementById('form-heading').textContent = 'Create User Profile';
+            document.getElementById('form-mode-badge').textContent = 'Page 1: Data Capture Form';
+            document.getElementById('submit-btn-text').textContent = 'Save & Open Directory Page';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('cancel-edit-btn').classList.remove('inline-flex');
+
+            // Reset custom fields & cascading dropdowns
+            ['customCountry', 'customState', 'customCity'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).value = '';
+            });
+            document.getElementById('state').innerHTML = '<option value="">Select Country First</option>';
+            document.getElementById('state').disabled = true;
+            document.getElementById('city').innerHTML = '<option value="">Select State First</option>';
+            document.getElementById('city').disabled = true;
+
+            // Clear validation borders and messages
+            ['fullName', 'mobile', 'email'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.remove('border-emerald-500', 'border-rose-500');
+                el.classList.add('border-slate-300', 'dark:border-slate-700');
+                const icon = document.getElementById(`icon-${id}`);
+                if (icon) icon.innerHTML = '';
+            });
+            document.querySelectorAll('[id^="error-"]').forEach(el => el.classList.add('hidden'));
+
+            updateLivePreview();
+        }
+
+        function editRecord(id) {
+            const records = getRecords();
+            const rec = records.find(r => r.id === id);
+            if (!rec) return;
+
+            switchPage('register');
+
+            // Populate form fields
+            document.getElementById('edit-record-id').value = rec.id;
+            document.getElementById('fullName').value = rec.fullName;
+
+            const genderRadio = document.querySelector(`input[name="gender"][value="${rec.gender}"]`);
+            if (genderRadio) genderRadio.checked = true;
+
+            if (rec.rawDialCode) {
+                document.getElementById('dialCode').value = rec.rawDialCode;
+            }
+            document.getElementById('mobile').value = rec.mobile;
+            document.getElementById('email').value = rec.email;
+
+            // Populate Cascading Location
+            const countrySelect = document.getElementById('country');
+            if (LOCATION_DATA[rec.country]) {
+                countrySelect.value = rec.country;
+                handleCountryChange();
+
+                const stateSelect = document.getElementById('state');
+                if (LOCATION_DATA[rec.country].states[rec.state]) {
+                    stateSelect.value = rec.state;
+                    handleStateChange();
+
+                    const citySelect = document.getElementById('city');
+                    if (LOCATION_DATA[rec.country].states[rec.state].includes(rec.city)) {
+                        citySelect.value = rec.city;
+                    } else {
+                        citySelect.value = '__CUSTOM__';
+                        handleCityChange();
+                        document.getElementById('customCity').value = rec.city;
+                    }
+                } else {
+                    stateSelect.value = '__CUSTOM__';
+                    handleStateChange();
+                    document.getElementById('customState').value = rec.state;
+                    document.getElementById('customCity').value = rec.city;
+                }
+            } else {
+                countrySelect.value = '__CUSTOM__';
+                handleCountryChange();
+                document.getElementById('customCountry').value = rec.country;
+                document.getElementById('customState').value = rec.state;
+                document.getElementById('customCity').value = rec.city;
+            }
+
+            // Update UI headers for Edit Mode
+            document.getElementById('form-heading').textContent = `Edit Profile (${rec.id})`;
+            document.getElementById('form-mode-badge').textContent = 'Editing Existing Record';
+            document.getElementById('submit-btn-text').textContent = 'Update & Return to Directory';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('cancel-edit-btn').classList.add('inline-flex');
+
+            ['fullName', 'gender', 'mobile', 'email', 'country', 'state', 'city'].forEach(validateField);
+            updateLivePreview();
+            showToast(`Loaded ${rec.fullName} into editor`, 'info');
+        }
+
+        function deleteRecord(id) {
+            openConfirmModal(
+                'Delete User Record',
+                'Are you sure you want to permanently remove this user from localStorage?',
+                () => {
+                    const updated = getRecords().filter(r => r.id !== id);
+                    saveRecords(updated);
+                    renderDirectory();
+                    showToast('User record deleted.', 'info');
+                }
+            );
+        }
+
+        function confirmClearAll() {
+            openConfirmModal(
+                'Purge All Directory Records',
+                'This will wipe all saved user profiles from your browser’s localStorage. Do you want to continue?',
+                () => {
+                    saveRecords([]);
+                    renderDirectory();
+                    showToast('All records cleared from storage.', 'info');
+                }
+            );
+        }
+
+        /**
+         * ============================================================================
+         * 7. DIRECTORY RENDERING, SEARCHING & FILTERING
+         * ============================================================================
+         */
+        function bindDirectoryFilters() {
+            document.getElementById('search-input').addEventListener('input', renderDirectory);
+            document.getElementById('filter-country').addEventListener('change', renderDirectory);
+            document.getElementById('filter-gender').addEventListener('change', renderDirectory);
+        }
+
+        function renderDirectory() {
+            const allRecords = getRecords();
+            updateNavBadge(allRecords.length);
+
+            // Populate dynamic country filter options
+            const countryFilter = document.getElementById('filter-country');
+            const currentFilterVal = countryFilter.value;
+            const uniqueCountries = [...new Set(allRecords.map(r => r.country))].sort();
+            countryFilter.innerHTML = '<option value="ALL">All Countries</option>';
+            uniqueCountries.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                countryFilter.appendChild(opt);
+            });
+            if (uniqueCountries.includes(currentFilterVal)) {
+                countryFilter.value = currentFilterVal;
+            }
+
+            // Render Spotlight Card for Latest Entry
+            const spotlightContainer = document.getElementById('latest-profile-container');
+            const clearAllBtn = document.getElementById('clear-all-btn');
+
+            if (allRecords.length > 0) {
+                spotlightContainer.classList.remove('hidden');
+                clearAllBtn.classList.remove('hidden');
+                clearAllBtn.classList.add('flex');
+                renderLatestSpotlight(allRecords[0]);
+            } else {
+                spotlightContainer.classList.add('hidden');
+                clearAllBtn.classList.add('hidden');
+                clearAllBtn.classList.remove('flex');
+            }
+
+            // Apply Search & Filters
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            const selectedCountry = countryFilter.value;
+            const selectedGender = document.getElementById('filter-gender').value;
+
+            const filtered = allRecords.filter(rec => {
+                const matchesQuery = !query || 
+                    rec.fullName.toLowerCase().includes(query) ||
+                    rec.email.toLowerCase().includes(query) ||
+                    rec.mobile.toLowerCase().includes(query) ||
+                    rec.city.toLowerCase().includes(query) ||
+                    rec.state.toLowerCase().includes(query) ||
+                    rec.id.toLowerCase().includes(query);
+
+                const matchesCountry = selectedCountry === 'ALL' || rec.country === selectedCountry;
+                const matchesGender = selectedGender === 'ALL' || rec.gender === selectedGender;
+
+                return matchesQuery && matchesCountry && matchesGender;
+            });
+
+            document.getElementById('records-showing-label').textContent = 
+                `Showing ${filtered.length} of ${allRecords.length} record${allRecords.length === 1 ? '' : 's'}`;
+
+            const tbody = document.getElementById('directory-table-body');
+            const emptyState = document.getElementById('empty-directory-state');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                tbody.innerHTML = filtered.map(rec => {
+                    const initials = rec.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                    return `
+                        <tr class="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors group">
+                            <td class="py-4 px-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 font-bold text-xs flex items-center justify-center shrink-0">
+                                        ${escapeHTML(initials)}
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-slate-900 dark:text-white">${escapeHTML(rec.fullName)}</div>
+                                        <div class="text-[11px] font-mono text-slate-400">${escapeHTML(rec.id)}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                    ${escapeHTML(rec.gender)}
+                                </span>
+                            </td>
+                            <td class="py-4 px-4 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                ${escapeHTML(rec.dialCode)} ${escapeHTML(rec.mobile)}
+                            </td>
+                            <td class="py-4 px-4 text-slate-600 dark:text-slate-300">
+                                <a href="mailto:${escapeHTML(rec.email)}" class="hover:text-brand-600 dark:hover:text-brand-400 underline decoration-slate-300 dark:decoration-slate-700 underline-offset-2">
+                                    ${escapeHTML(rec.email)}
+                                </a>
+                            </td>
+                            <td class="py-4 px-4 text-slate-600 dark:text-slate-300">
+                                <div class="font-medium text-slate-800 dark:text-slate-200">${escapeHTML(rec.city)}, ${escapeHTML(rec.state)}</div>
+                                <div class="text-xs text-slate-400">${escapeHTML(rec.country)}</div>
+                            </td>
+                            <td class="py-4 px-6 text-right whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <button onclick="editRecord('${escapeHTML(rec.id)}')" title="Edit User" class="p-2 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/60 transition">
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="deleteRecord('${escapeHTML(rec.id)}')" title="Delete User" class="p-2 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            lucide.createIcons();
+        }
+
+        function renderLatestSpotlight(rec) {
+            const initials = rec.fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+            const dateStr = new Date(rec.updatedAt).toLocaleString();
+            document.getElementById('latest-timestamp').textContent = `Captured: ${dateStr}`;
+
+            document.getElementById('latest-profile-card').innerHTML = `
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-md border border-white/25 flex items-center justify-center text-2xl font-extrabold text-white shrink-0">
+                            ${escapeHTML(initials)}
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-white/20 text-white">${escapeHTML(rec.id)}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-400/20 text-emerald-100 border border-emerald-300/30">${escapeHTML(rec.gender)}</span>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white">${escapeHTML(rec.fullName)}</h3>
+                            <p class="text-brand-100 text-sm flex items-center gap-1.5 mt-0.5">
+                                <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                ${escapeHTML(rec.city)}, ${escapeHTML(rec.state)}, ${escapeHTML(rec.country)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/15 backdrop-blur-md rounded-2xl p-4 border border-white/15">
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wider text-brand-200">Mobile Number</div>
+                            <div class="font-mono text-sm font-semibold text-white mt-0.5">${escapeHTML(rec.dialCode)} ${escapeHTML(rec.mobile)}</div>
+                        </div>
+                        <div>
+                            <div class="text-[11px] uppercase tracking-wider text-brand-200">Email Address</div>
+                            <div class="text-sm font-semibold text-white mt-0.5 truncate max-w-[220px]">${escapeHTML(rec.email)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * ============================================================================
+         * 8. DATA EXPORT (JSON / CSV) & SAMPLE SEEDER
+         * ============================================================================
+         */
+        function exportData(format) {
+            const records = getRecords();
+            if (records.length === 0) {
+                showToast('No records available to export.', 'error');
+                return;
+            }
+
+            let content = '';
+            let mimeType = '';
+            let filename = `usernexus_directory_${new Date().toISOString().slice(0, 10)}.${format}`;
+
+            if (format === 'json') {
+                content = JSON.stringify(records, null, 2);
+                mimeType = 'application/json';
+            } else if (format === 'csv') {
+                const headers = ['ID', 'Full Name', 'Gender', 'Dial Code', 'Mobile', 'Email', 'City', 'State', 'Country', 'Updated At'];
+                const rows = records.map(r => [
+                    r.id, r.fullName, r.gender, r.dialCode, r.mobile, r.email, r.city, r.state, r.country, r.updatedAt
+                ].map(val => `"${String(val).replace(/"/g, '""')}"`).join(','));
+                content = [headers.join(','), ...rows].join('\n');
+                mimeType = 'text/csv';
+            }
+
+            triggerDownload(filename, content, mimeType);
+            showToast(`Exported ${records.length} records as ${format.toUpperCase()}`, 'success');
+        }
+
+        function seedSampleData() {
+            const sampleUsers = [
+                {
+                    id: 'USR-IND801',
+                    fullName: 'Madhu Gowda',
+                    gender: 'Female',
+                    dialCode: '+91',
+                    rawDialCode: '+91',
+                    mobile: '98450 11223',
+                    email: 'madhugowda@gmail.com',
+                    city: 'Bangalore',
+                    state: 'Karnataka',
+                    country: 'India',
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'USR-USA402',
+                    fullName: 'Marcus Vance',
+                    gender: 'Male',
+                    dialCode: '+1',
+                    rawDialCode: '+1',
+                    mobile: '41589 03412',
+                    email: 'mvance@cloudscale.io',
+                    city: 'San Francisco',
+                    state: 'California',
+                    country: 'United States',
+                    updatedAt: new Date(Date.now() - 3600000).toISOString()
+                },
+                {
+                    id: 'USR-UK905',
+                    fullName: 'Eleanor Sterling',
+                    gender: 'Female',
+                    dialCode: '+44',
+                    rawDialCode: '+44',
+                    mobile: '77009 00412',
+                    email: 'e.sterling@fintech.co.uk',
+                    city: 'London',
+                    state: 'England',
+                    country: 'United Kingdom',
+                    updatedAt: new Date(Date.now() - 7200000).toISOString()
+                }
+            ];
+
+            const existing = getRecords();
+            const merged = [...sampleUsers, ...existing.filter(e => !sampleUsers.some(s => s.id === e.id))];
+            saveRecords(merged);
+            renderDirectory();
+            showToast('3 sample enterprise profiles added!', 'success');
+        }
+
+        /**
+         * ============================================================================
+         * 9. STANDALONE MULTI-FILE SOURCE CODE GENERATOR & INSPECTOR
+         * ============================================================================
+         */
+        const STANDALONE_FILES = {
+            'index.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration — Page 1</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="container">
+        <header class="header">
+            <h1>User Registration Portal</h1>
+            <p>Fill out your profile details below to store and view them on the Directory Page.</p>
+            <a href="display.html" class="nav-link">View Saved Directory &rarr;</a>
+        </header>
+
+        <form id="userForm" class="card" novalidate>
+            <div class="form-group">
+                <label for="fullName">Full Name *</label>
+                <input type="text" id="fullName" value="Madhu Gowda" required placeholder="e.g., Madhu Gowda">
+                <small class="error" id="err-fullName"></small>
+            </div>
+
+            <div class="form-group">
+                <label>Gender *</label>
+                <div class="radio-row">
+                    <label><input type="radio" name="gender" value="Male" required> Male</label>
+                    <label><input type="radio" name="gender" value="Female"> Female</label>
+                    <label><input type="radio" name="gender" value="Other"> Other</label>
+                </div>
+                <small class="error" id="err-gender"></small>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="mobile">Mobile Number *</label>
+                    <div class="phone-input">
+                        <select id="dialCode">
+                            <option value="+91">+91 (IN)</option>
+                            <option value="+1">+1 (US)</option>
+                            <option value="+44">+44 (UK)</option>
+                            <option value="+61">+61 (AU)</option>
+                        </select>
+                        <input type="tel" id="mobile" required placeholder="9876543210">
+                    </div>
+                    <small class="error" id="err-mobile"></small>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Mail ID *</label>
+                    <input type="email" id="email" value="madhugowda@gmail.com" required placeholder="madhugowda@gmail.com">
+                    <small class="error" id="err-email"></small>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="country">Country *</label>
+                    <select id="country" required>
+                        <option value="">Select Country</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="state">State *</label>
+                    <select id="state" required disabled>
+                        <option value="">Select Country First</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City *</label>
+                    <select id="city" required disabled>
+                        <option value="">Select State First</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Submit &amp; Display on Next Page</button>
+        </form>
+    </main>
+    <script src="app.js"><\/script>
+</body>
+</html>`,
+
+            'display.html': `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Captured User Directory — Page 2</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main class="container">
+        <header class="header">
+            <h1>Captured User Details</h1>
+            <p>Records retrieved from client-side <code>localStorage</code> across pages.</p>
+            <a href="index.html" class="nav-link">&larr; Register Another User</a>
+        </header>
+
+        <section id="latestCard" class="spotlight-card"></section>
+
+        <section class="card">
+            <div class="toolbar">
+                <input type="text" id="searchBox" placeholder="Search by name, email, or city...">
+                <button id="exportCsvBtn" class="btn-secondary">Export CSV</button>
+                <button id="clearAllBtn" class="btn-danger">Clear All</button>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Gender</th>
+                            <th>Mobile</th>
+                            <th>Mail ID</th>
+                            <th>City, State, Country</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <script src="app.js"><\/script>
+</body>
+</html>`,
+
+            'styles.css': `:root {
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+}
+
+* { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+body { background: var(--bg); color: var(--text); margin: 0; padding: 2rem 1rem; }
+.container { max-width: 900px; margin: 0 auto; }
+.header { text-align: center; margin-bottom: 2rem; }
+.header h1 { margin: 0 0 0.5rem; }
+.header p { color: var(--muted); margin: 0 0 1rem; }
+.nav-link { color: var(--primary); font-weight: 600; text-decoration: none; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+.form-group { margin-bottom: 1.25rem; }
+label { display: block; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.4rem; }
+input[type="text"], input[type="tel"], input[type="email"], select {
+    width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 10px; font-size: 0.95rem;
+}
+.phone-input { display: flex; gap: 0.5rem; }
+.phone-input select { width: 120px; }
+.radio-row { display: flex; gap: 1.5rem; padding-top: 0.25rem; }
+.radio-row label { font-weight: 400; display: flex; align-items: center; gap: 0.4rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.error { color: #e11d48; font-size: 0.78rem; display: block; margin-top: 0.25rem; }
+
+.btn-primary { width: 100%; padding: 0.85rem; background: var(--primary); color: #fff; border: none; border-radius: 10px; font-weight: 600; font-size: 1rem; cursor: pointer; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary, .btn-danger { padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-weight: 600; }
+.btn-danger { background: #ffe4e6; color: #be123c; border-color: #fecdd3; }
+
+.spotlight-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 1.5rem 2rem; border-radius: 16px; margin-bottom: 1.5rem; }
+.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.85rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+@media (max-width: 640px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }`,
+
+            'app.js': `const GEO_TREE = {
+    "India": {
+        "Karnataka": ["Bangalore", "Mysuru", "Mangaluru"],
+        "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
+        "Delhi": ["New Delhi", "Dwarka"]
+    },
+    "United States": {
+        "California": ["San Francisco", "Los Angeles", "San Diego"],
+        "New York": ["New York City", "Buffalo"]
+    },
+    "United Kingdom": {
+        "England": ["London", "Manchester", "Birmingham"]
+    }
+};
+
+const STORAGE_KEY = 'captured_users_db';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const userForm = document.getElementById('userForm');
+    const recordsBody = document.getElementById('recordsBody');
+
+    // Logic for Page 1: index.html
+    if (userForm) {
+        const countryEl = document.getElementById('country');
+        const stateEl = document.getElementById('state');
+        const cityEl = document.getElementById('city');
+
+        Object.keys(GEO_TREE).forEach(c => countryEl.add(new Option(c, c)));
+
+        // Pre-select default location: India -> Karnataka -> Bangalore
+        countryEl.value = 'India';
+        stateEl.disabled = false;
+        Object.keys(GEO_TREE['India']).forEach(s => stateEl.add(new Option(s, s)));
+        stateEl.value = 'Karnataka';
+        cityEl.disabled = false;
+        GEO_TREE['India']['Karnataka'].forEach(ct => cityEl.add(new Option(ct, ct)));
+        cityEl.value = 'Bangalore';
+
+        countryEl.addEventListener('change', () => {
+            stateEl.innerHTML = '<option value="">Select State</option>';
+            cityEl.innerHTML = '<option value="">Select State First</option>';
+            cityEl.disabled = true;
+            if (countryEl.value) {
+                stateEl.disabled = false;
+                Object.keys(GEO_TREE[countryEl.value]).forEach(s => stateEl.add(new Option(s, s)));
+            } else {
+                stateEl.disabled = true;
+            }
+        });
+
+        stateEl.addEventListener('change', () => {
+            cityEl.innerHTML = '<option value="">Select City</option>';
+            if (stateEl.value) {
+                cityEl.disabled = false;
+                GEO_TREE[countryEl.value][stateEl.value].forEach(ct => cityEl.add(new Option(ct, ct)));
+            } else {
+                cityEl.disabled = true;
+            }
+        });
+
+        userForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const genderEl = document.querySelector('input[name="gender"]:checked');
+            const newUser = {
+                id: Date.now(),
+                fullName: document.getElementById('fullName').value.trim(),
+                gender: genderEl ? genderEl.value : '',
+                mobile: document.getElementById('dialCode').value + ' ' + document.getElementById('mobile').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                country: countryEl.value,
+                state: stateEl.value,
+                city: cityEl.value
+            };
+
+            if (!newUser.fullName || !newUser.gender || !newUser.mobile || !newUser.email || !newUser.city) {
+                alert('Please complete all required fields.');
+                return;
+            }
+
+            const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            existing.unshift(newUser);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+
+            // Navigate to Page 2
+            window.location.href = 'display.html';
+        });
+    }
+
+    // Logic for Page 2: display.html
+    if (recordsBody) {
+        const render = (filter = '') => {
+            const users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const latestCard = document.getElementById('latestCard');
+
+            if (users.length > 0) {
+                const latest = users[0];
+                latestCard.innerHTML = \`
+                    <h2>Latest Submission: \${latest.fullName}</h2>
+                    <p>\${latest.gender} &bull; \${latest.mobile} &bull; \${latest.email}</p>
+                    <p>Location: \${latest.city}, \${latest.state}, \${latest.country}</p>
+                \`;
+            } else {
+                latestCard.innerHTML = '<p>No user data captured yet. Go back to the form to add one.</p>';
+            }
+
+            const filtered = users.filter(u => 
+                u.fullName.toLowerCase().includes(filter.toLowerCase()) ||
+                u.email.toLowerCase().includes(filter.toLowerCase()) ||
+                u.city.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            recordsBody.innerHTML = filtered.map(u => \`
+                <tr>
+                    <td><strong>\${u.fullName}</strong></td>
+                    <td>\${u.gender}</td>
+                    <td>\${u.mobile}</td>
+                    <td>\${u.email}</td>
+                    <td>\${u.city}, \${u.state}, \${u.country}</td>
+                    <td><button onclick="deleteEntry(\${u.id})">Delete</button></td>
+                </tr>
+            \`).join('');
+        };
+
+        window.deleteEntry = (id) => {
+            const updated = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').filter(u => u.id !== id);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+            render();
+        };
+
+        document.getElementById('searchBox').addEventListener('input', (e) => render(e.target.value));
+        document.getElementById('clearAllBtn').addEventListener('click', () => {
+            localStorage.removeItem(STORAGE_KEY);
+            render();
+        });
+
+        render();
+    }
+});`
+        };
+
+        function selectSourceTab(filename) {
+            activeSourceFile = filename;
+            document.querySelectorAll('.src-tab').forEach(btn => {
+                btn.classList.remove('bg-slate-900', 'text-white', 'dark:bg-brand-600');
+                btn.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+            });
+
+            const activeBtn = document.getElementById(`src-tab-${filename}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-300');
+                activeBtn.classList.add('bg-slate-900', 'text-white', 'dark:bg-brand-600');
+            }
+
+            document.getElementById('active-filename-label').textContent = filename;
+            document.getElementById('source-code-display').textContent = STANDALONE_FILES[filename];
+        }
+
+        function copyActiveSourceCode() {
+            const text = STANDALONE_FILES[activeSourceFile];
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast(`Copied ${activeSourceFile} to clipboard!`, 'success');
+        }
+
+        function downloadSingleSourceFile() {
+            const content = STANDALONE_FILES[activeSourceFile];
+            triggerDownload(activeSourceFile, content, 'text/plain');
+            showToast(`Downloaded ${activeSourceFile}`, 'success');
+        }
+
+        function downloadAllStandaloneFiles() {
+            Object.entries(STANDALONE_FILES).forEach(([filename, content], index) => {
+                setTimeout(() => {
+                    triggerDownload(filename, content, 'text/plain');
+                }, index * 250);
+            });
+            showToast('Downloading index.html, display.html, styles.css, and app.js...', 'success');
+        }
+
+        /**
+         * ============================================================================
+         * 10. UI HELPERS: TOASTS, CUSTOM CONFIRM MODAL, DOWNLOADS & SANITIZATION
+         * ============================================================================
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-emerald-600 text-white border-emerald-500',
+                error: 'bg-rose-600 text-white border-rose-500',
+                info: 'bg-slate-900 dark:bg-slate-800 text-white border-slate-700'
+            };
+
+            const icons = {
+                success: 'check-circle',
+                error: 'alert-octagon',
+                info: 'info'
+            };
+
+            toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-xl text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0 ${colors[type]}`;
+            toast.innerHTML = `
+                <i data-lucide="${icons[type]}" class="w-4 h-4 shrink-0"></i>
+                <span class="flex-1">${escapeHTML(message)}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            confirmCallback = onConfirm;
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.getElementById('confirm-cancel-btn').addEventListener('click', () => {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            confirmCallback = null;
+        });
+
+        document.getElementById('confirm-proceed-btn').addEventListener('click', () => {
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            confirmCallback = null;
+        });
+
+        function triggerDownload(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
